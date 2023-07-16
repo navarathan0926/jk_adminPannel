@@ -33,6 +33,18 @@ class _AdminHomeState extends State<AdminHome> {
               onPressed: () => _logout(context),
               child: Text('Logout'),
             ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushReplacementNamed(context, '/packageForm');
+              },
+              child: Text('to upload package'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushReplacementNamed(context, '/manageUsers');
+              },
+              child: Text('manage users'),
+            ),
           ],
         ),
       ),
