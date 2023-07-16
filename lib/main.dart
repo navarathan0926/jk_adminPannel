@@ -1,9 +1,11 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:jk_admin/screens/login.dart';
-
+import 'package:jk_admin/screens/forms/abc.dart';
+import 'package:jk_admin/screens/forms/abc2.dart';
 import 'firebase_options.dart';
 import 'screens/admin_home.dart';
+import 'screens/forms/uploadform.dart';
+import 'screens/manageUsers.dart';
 import 'screens/signin.dart';
 
 // void main() async {
@@ -25,6 +27,10 @@ void main() async {
     routes: {
       '/login': (context) => Signin(),
       '/home': (context) => AdminHome(),
+      '/packageForm': (context) => PackageForm(),
+      '/upload': (context) => UploadForm(),
+      '/abs': (context) => NewItemPage(),
+      '/manageUsers': (context) => ManageUsers(),
     },
   ));
 }
