@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:jk_admin/screens/signup.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../reusable_widgets/reusable_widgets.dart';
 import '../utils/colors.dart';
@@ -20,14 +21,25 @@ class _SigninState extends State<Signin> {
   TextEditingController _passwordTextController = TextEditingController();
   TextEditingController _emailTextController = TextEditingController();
 
+  void storeAuthToken(String token) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('authToken', token);
+  }
+
+  Future<String?> checkAuthToken() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString('authToken');
+  }
+
   @override
   Widget build(BuildContext context) {
     String _userRole = '';
+
     void navigateToRoleScreen() {
       if (_userRole == 'admin') {
-        Navigator.push(
-            context, MaterialPageRoute(builder: (context) => AdminHome()));
-        // Navigator.pushNamed(context, 'coach/coachHome/coachScreen');
+        // Navigator.push(
+        //     context, MaterialPageRoute(builder: (context) => AdminHome()));
+        Navigator.pushReplacementNamed(context, '/home');
       }
     }
 
@@ -98,13 +110,17 @@ class _SigninState extends State<Signin> {
                             SizedBox(
                               height: 20,
                             ),
-                            signInSignUpButton(context, true, () {
-                              FirebaseAuth.instance
-                                  .signInWithEmailAndPassword(
-                                      email: _emailTextController.text,
-                                      password: _passwordTextController.text)
-                                  .then((value) async {
-                                String? uid = value.user?.uid;
+                            signInSignUpButton(context, true, () async {
+                              try {
+                                UserCredential userCredential =
+                                    await FirebaseAuth.instance
+                                        .signInWithEmailAndPassword(
+                                            email: _emailTextController.text,
+                                            password:
+                                                _passwordTextController.text);
+
+                                String uid = userCredential.user!.uid;
+
                                 FirebaseFirestore _firestore =
                                     FirebaseFirestore.instance;
                                 DocumentSnapshot userSnapshot = await _firestore
@@ -112,7 +128,6 @@ class _SigninState extends State<Signin> {
                                     .doc(uid)
                                     .get();
 
-                                // fore role based login
                                 if (userSnapshot.exists) {
                                   setState(() {
                                     _userRole = userSnapshot['role'];
@@ -122,14 +137,45 @@ class _SigninState extends State<Signin> {
                                   // Handle user document not found error
                                 }
 
-                                // Navigator.push(context,
-                                //     MaterialPageRoute(builder: (context) => Home()));
                                 _emailTextController.clear();
                                 _passwordTextController.clear();
-                              }).onError((error, stackTrace) {
-                                print("Error ${error.toString()}");
-                              });
+                              } catch (error) {
+                                print("Error: ${error.toString()}");
+                              }
                             }),
+
+                            // signInSignUpButton(context, true, () {
+                            //   FirebaseAuth.instance
+                            //       .signInWithEmailAndPassword(
+                            //           email: _emailTextController.text,
+                            //           password: _passwordTextController.text)
+                            //       .then((value) async {
+                            //     String? uid = value.user?.uid;
+                            //     FirebaseFirestore _firestore =
+                            //         FirebaseFirestore.instance;
+                            //     DocumentSnapshot userSnapshot = await _firestore
+                            //         .collection('users')
+                            //         .doc(uid)
+                            //         .get();
+                            //
+                            //     // fore role based login
+                            //     if (userSnapshot.exists) {
+                            //       setState(() {
+                            //         _userRole = userSnapshot['role'];
+                            //       });
+                            //       navigateToRoleScreen();
+                            //     } else {
+                            //       // Handle user document not found error
+                            //     }
+                            //
+                            //     // Navigator.push(context,
+                            //     //     MaterialPageRoute(builder: (context) => Home()));
+                            //     _emailTextController.clear();
+                            //     _passwordTextController.clear();
+                            //   }).onError((error, stackTrace) {
+                            //     print("Error ${error.toString()}");
+                            //   });
+                            // }),
                             singUpOption()
                           ],
                         )))),
