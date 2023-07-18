@@ -1,47 +1,50 @@
-import 'dart:io';
-
+import 'dart:html' as html;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:path/path.dart' as path;
+import 'package:file_picker/file_picker.dart';
 
-class PackageForm extends StatefulWidget {
-  const PackageForm({Key? key}) : super(key: key);
+class AddPackage extends StatefulWidget {
+  const AddPackage({Key? key}) : super(key: key);
 
   @override
-  State<PackageForm> createState() => _PackageFormState();
+  State<AddPackage> createState() => _AddPackageState();
 }
 
-class _PackageFormState extends State<PackageForm> {
-  String? valueChoose;
-  TextEditingController _descriptionTextController = TextEditingController();
-  TextEditingController _packageTextController = TextEditingController();
+class _AddPackageState extends State<AddPackage> {
+  TextEditingController _packageNameTextController = TextEditingController();
   TextEditingController _durationTextController = TextEditingController();
   TextEditingController _priceController = TextEditingController();
+  TextEditingController _descriptionController = TextEditingController();
 
   FirebaseStorage storage = FirebaseStorage.instance;
-  CollectionReference imageCollection =
+  CollectionReference imgCollection =
       FirebaseFirestore.instance.collection('packages');
 
-  XFile? pickedFile;
+  html.File? pickedImageFile;
+  String? imageUrl;
 
-  Future<XFile?> _pickImage() async {
-    final picker = ImagePicker();
-    pickedFile = await picker.pickImage(
-      source: ImageSource.gallery,
+  void _pickImage() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
     );
-    return pickedFile;
+
+    if (result != null) {
+      setState(() {
+        pickedImageFile =
+            html.File(result.files.single.bytes!, result.files.single.name);
+      });
+    }
   }
 
   Future<void> _upload() async {
-    if (pickedFile == null) {
+    if (pickedImageFile == null) {
+      // No file picked, show an error message
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Error'),
-          content: const Text('Please pick an image first.'),
+          content: const Text('Please pick an image file.'),
           actions: [
             TextButton(
               onPressed: () {
@@ -55,8 +58,18 @@ class _PackageFormState extends State<PackageForm> {
       return;
     }
 
-    final String fileName = path.basename(pickedFile!.path);
-    File file = File(pickedFile!.path);
+    String fileName = pickedImageFile!.name;
+    String filePath = 'package/$fileName';
+
+    // Uploading the selected image with some custom metadata
+    final ref = storage.ref().child(filePath);
+    final metadata =
+        SettableMetadata(contentType: 'image/png', customMetadata: {
+      'uploaded_by': 'Admin',
+    });
+    final uploadTask = ref.putBlob(pickedImageFile!, metadata);
+    final snapshot = await uploadTask.whenComplete(() {});
+    imageUrl = await snapshot.ref.getDownloadURL();
 
     try {
       // Show confirmation message
@@ -64,7 +77,7 @@ class _PackageFormState extends State<PackageForm> {
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Confirmation'),
-          content: const Text('Do you want to upload the image?'),
+          content: const Text('Do you want to upload the file?'),
           actions: [
             TextButton(
               onPressed: () {
@@ -83,39 +96,23 @@ class _PackageFormState extends State<PackageForm> {
       );
 
       if (confirmUpload == true) {
-        // Uploading the selected image with some custom meta data
-        await storage.ref(fileName).putFile(
-              file,
-              // SettableMetadata(
-              //   customMetadata: {
-              //     'uploaded_by': 'admin..',
-              //   },
-              // ),
-            );
-
-        final imageUrl = await storage.ref(fileName).getDownloadURL();
-
-        await imageCollection.doc(fileName).set({
+        await imgCollection.doc(fileName).set({
           'url': imageUrl,
-          'package': _packageTextController.text,
-          'description': _descriptionTextController.text,
+          'fileName': fileName,
+          'packageName': _packageNameTextController.text,
           'date': DateTime.now(),
           'uploaded_by': 'Admin',
           'duration': _durationTextController.text,
+          'description': _descriptionController.text,
           'price': _priceController.text,
         });
 
-        // Refresh the UI
-        setState(() {});
+        // setState(() {});
       }
     } on FirebaseException catch (error) {
-      if (kDebugMode) {
-        print(error);
-      }
+      print(error);
     }
   }
-
-  List<String> listItem = ["Chest", "Abs", "Shoulder", "Triceps"];
 
   @override
   Widget build(BuildContext context) {
@@ -131,52 +128,40 @@ class _PackageFormState extends State<PackageForm> {
           children: [
             SizedBox(height: height * 0.05),
             TextFormField(
-              controller: _packageTextController,
+              controller: _packageNameTextController,
               decoration: InputDecoration(
-                labelText: "Package",
+                labelText: "Package name",
                 labelStyle: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(0.0),
-                      child: const Text(
-                        "Category",
-                        style: TextStyle(
-                            fontSize: 25, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            TextFormField(
-              controller: _priceController,
-              decoration: InputDecoration(
-                labelText: "Enter Price",
-                labelStyle:
-                    TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-            ),
+            SizedBox(height: height * 0.05),
             TextFormField(
               controller: _durationTextController,
               decoration: InputDecoration(
-                labelText: "Enter Duration",
+                labelText: "Package duration in months",
                 labelStyle:
                     TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ),
+            SizedBox(height: height * 0.05),
             TextFormField(
-              controller: _descriptionTextController,
+              controller: _priceController,
               decoration: InputDecoration(
-                labelText: "Add description",
+                labelText: "Price",
+                labelStyle: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            SizedBox(height: height * 0.05),
+            TextFormField(
+              controller: _descriptionController,
+              decoration: InputDecoration(
+                labelText: "Package description",
                 labelStyle:
                     TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
@@ -185,9 +170,7 @@ class _PackageFormState extends State<PackageForm> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton.icon(
-                  onPressed: () async {
-                    await _pickImage();
-                  },
+                  onPressed: _pickImage,
                   icon: const Icon(Icons.photo_library_sharp),
                   label: const Text('Pick Picture'),
                 ),
@@ -198,18 +181,16 @@ class _PackageFormState extends State<PackageForm> {
               padding: const EdgeInsets.all(16.0),
               child: Center(
                 child: ElevatedButton(
-                  onPressed: () {
-                    _upload();
-                  },
-                  child: const Text('Save'),
+                  onPressed: _upload,
+                  child: const Text('Add package'),
                 ),
               ),
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.pushReplacementNamed(context, '/upload');
+                Navigator.pushReplacementNamed(context, '/packageView');
               },
-              child: Text('to upload workout'),
+              child: Text('to view package'),
             ),
           ],
         ),
