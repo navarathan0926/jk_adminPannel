@@ -1,11 +1,11 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:jk_admin/screens/forms/abc.dart';
-import 'package:jk_admin/screens/forms/abc2.dart';
 import 'firebase_options.dart';
+import 'models/Users.dart';
 import 'screens/admin_home.dart';
-import 'screens/forms/uploadform.dart';
+import 'screens/forms/packageUpload.dart';
 import 'screens/manageUsers.dart';
+import 'screens/packageView.dart';
 import 'screens/signin.dart';
 
 // void main() async {
@@ -21,15 +21,16 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  addExpirationStatusToUsers();
+  print('Expiration status added to users successfully');
   runApp(MaterialApp(
     debugShowCheckedModeBanner: false,
     initialRoute: '/login',
     routes: {
       '/login': (context) => Signin(),
       '/home': (context) => AdminHome(),
-      '/packageForm': (context) => PackageForm(),
-      '/upload': (context) => UploadForm(),
-      '/abs': (context) => NewItemPage(),
+      '/packageForm': (context) => AddPackage(),
+      '/packageView': (context) => ViewPackage(),
       '/manageUsers': (context) => ManageUsers(),
     },
   ));
