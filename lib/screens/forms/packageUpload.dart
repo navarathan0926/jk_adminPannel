@@ -1,8 +1,8 @@
-import 'dart:html' as html;
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AddPackage extends StatefulWidget {
   const AddPackage({Key? key}) : super(key: key);
@@ -19,27 +19,29 @@ class _AddPackageState extends State<AddPackage> {
 
   FirebaseStorage storage = FirebaseStorage.instance;
   CollectionReference imgCollection =
-      FirebaseFirestore.instance.collection('packages');
+  FirebaseFirestore.instance.collection('packages');
 
-  html.File? pickedImageFile;
+  Uint8List? pickedImageBytes; // To store the image bytes
   String? imageUrl;
+  String? _selectedFileName;
 
   void _pickImage() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png'],
     );
 
     if (result != null) {
       setState(() {
-        pickedImageFile =
-            html.File(result.files.single.bytes!, result.files.single.name);
+        pickedImageBytes = result.files.single.bytes;
+        _selectedFileName = result.files.single.name; // Store the selected filename
       });
     }
   }
 
   Future<void> _upload() async {
-    if (pickedImageFile == null) {
-      // No file picked, show an error message
+    if (pickedImageBytes == null) {
+      // No image picked, show an error message
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -58,21 +60,20 @@ class _AddPackageState extends State<AddPackage> {
       return;
     }
 
-    String fileName = pickedImageFile!.name;
+    String fileName =  _selectedFileName!; // Use package name as the file name
     String filePath = 'package/$fileName';
 
-    // Uploading the selected image with some custom metadata
     final ref = storage.ref().child(filePath);
-    final metadata =
-        SettableMetadata(contentType: 'image/png', customMetadata: {
-      'uploaded_by': 'Admin',
-    });
-    final uploadTask = ref.putBlob(pickedImageFile!, metadata);
+    final metadata = SettableMetadata(
+      contentType: 'image/${fileName.split('.').last}', // Set the content type based on the image format
+      customMetadata: {'uploaded_by': 'Admin'},
+    );
+
+    final uploadTask = ref.putData(pickedImageBytes!, metadata); // Use putData instead of putBlob
     final snapshot = await uploadTask.whenComplete(() {});
     imageUrl = await snapshot.ref.getDownloadURL();
 
     try {
-      // Show confirmation message
       bool confirmUpload = await showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -100,14 +101,15 @@ class _AddPackageState extends State<AddPackage> {
           'url': imageUrl,
           'fileName': fileName,
           'packageName': _packageNameTextController.text,
-          'date': DateTime.now(),
+          'date': DateTime.now().toString().split(' ')[0],
           'uploaded_by': 'Admin',
           'duration': _durationTextController.text,
           'description': _descriptionController.text,
           'price': _priceController.text,
         });
 
-        // setState(() {});
+        // Show success message or any additional actions
+        // ...
       }
     } on FirebaseException catch (error) {
       print(error);
@@ -142,8 +144,7 @@ class _AddPackageState extends State<AddPackage> {
               controller: _durationTextController,
               decoration: InputDecoration(
                 labelText: "Package duration in months",
-                labelStyle:
-                    TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                labelStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ),
             SizedBox(height: height * 0.05),
@@ -162,17 +163,19 @@ class _AddPackageState extends State<AddPackage> {
               controller: _descriptionController,
               decoration: InputDecoration(
                 labelText: "Package description",
-                labelStyle:
-                    TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                labelStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xff9b1616),
+                  ),
                   onPressed: _pickImage,
-                  icon: const Icon(Icons.photo_library_sharp),
-                  label: const Text('Pick Picture'),
+                  icon: Icon(Icons.photo_library_sharp),
+                  label: Text('Pick Picture'),
                 ),
               ],
             ),
@@ -181,17 +184,23 @@ class _AddPackageState extends State<AddPackage> {
               padding: const EdgeInsets.all(16.0),
               child: Center(
                 child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xff9b1616),
+                  ),
                   onPressed: _upload,
-                  child: const Text('Add package'),
+                  child: Text('Add package'),
                 ),
               ),
             ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushReplacementNamed(context, '/packageView');
-              },
-              child: Text('to view package'),
-            ),
+            // ElevatedButton(
+            //   style: ElevatedButton.styleFrom(
+            //     backgroundColor: Color(0xff9b1616),
+            //   ),
+            //   onPressed: () {
+            //     Navigator.pushReplacementNamed(context, '/packageView');
+            //   },
+            //   child: Text('to view package'),
+            // ),
           ],
         ),
       ),

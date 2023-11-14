@@ -1,40 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class EditUser extends StatefulWidget {
+class EditCoach extends StatefulWidget {
   final String username;
   final String id;
   final String email;
   final String role;
   final String phone_no;
-  final String dob;
   final String address;
-  final String expirationStatus;
 
-  EditUser({
+
+  EditCoach({
     required this.username,
     required this.id,
     required this.email,
     required this.role,
     required this.phone_no,
-    required this.dob,
     required this.address,
-    required this.expirationStatus,
   });
 
   @override
-  _EditUserState createState() => _EditUserState();
+  _EditCoachState createState() => _EditCoachState();
 }
 
-class _EditUserState extends State<EditUser> {
+class _EditCoachState extends State<EditCoach> {
   late TextEditingController _nameController;
   late TextEditingController _idController;
   late TextEditingController _emailController;
   late TextEditingController _roleController;
   late TextEditingController _phone_noController;
-  late TextEditingController _dobController;
   late TextEditingController _addressController;
-  late TextEditingController _expirationStatusController;
 
   @override
   void initState() {
@@ -44,10 +39,8 @@ class _EditUserState extends State<EditUser> {
     _emailController = TextEditingController(text: widget.email);
     _roleController = TextEditingController(text: widget.role);
     _phone_noController = TextEditingController(text: widget.phone_no);
-    _dobController = TextEditingController(text: widget.dob);
     _addressController = TextEditingController(text: widget.address);
-    _expirationStatusController =
-        TextEditingController(text: widget.expirationStatus);
+
   }
 
   @override
@@ -57,15 +50,13 @@ class _EditUserState extends State<EditUser> {
     super.dispose();
   }
 
-  void _updateUser() {
+  void _updateCoach() {
     String newName = _nameController.text;
     String newId = _idController.text;
     String newEmail = _emailController.text;
     String newRole = _roleController.text;
     String newPhone_no = _phone_noController.text;
-    String newDob = _dobController.text;
     String newAddress = _addressController.text;
-    String newExpirationStatus = _expirationStatusController.text;
 
     // Update the user data in Firestore
     FirebaseFirestore.instance.collection('users').doc(widget.id).update({
@@ -74,19 +65,17 @@ class _EditUserState extends State<EditUser> {
       'email': newEmail,
       'role': newRole,
       'phone_no': newPhone_no,
-      'dob': newDob,
       'address': newAddress,
-      'expirationStatus': newExpirationStatus,
     }).then((value) {
       // Update successful
-      Navigator.pushReplacementNamed(context, '/manageUsers');
+      Navigator.pushReplacementNamed(context, '/manage coaches');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('User updated successfully')),
+        SnackBar(content: Text('Coach updated successfully')),
       );
     }).catchError((error) {
       // Update failed
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update user')),
+        SnackBar(content: Text('Failed to update coach')),
       );
     });
   }
@@ -95,7 +84,7 @@ class _EditUserState extends State<EditUser> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Edit User'),
+        title: Text('Edit Coach'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -140,24 +129,9 @@ class _EditUserState extends State<EditUser> {
             ),
             SizedBox(height: 16.0),
             TextField(
-              controller: _dobController,
-              readOnly: true,
-              decoration: InputDecoration(
-                labelText: 'DOB',
-              ),
-            ),
-            SizedBox(height: 16.0),
-            TextField(
               controller: _addressController,
               decoration: InputDecoration(
                 labelText: 'Address',
-              ),
-            ),
-            SizedBox(height: 16.0),
-            TextField(
-              controller: _expirationStatusController,
-              decoration: InputDecoration(
-                labelText: 'Expiration Status',
               ),
             ),
             SizedBox(height: 16.0),
@@ -165,7 +139,7 @@ class _EditUserState extends State<EditUser> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xff9b1616),
               ),
-              onPressed: _updateUser,
+              onPressed: _updateCoach,
               child: Text('Submit'),
             ),
           ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:jk_admin/screens/forms/packageUpload.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import 'coachSalaryView.dart';
+import 'sidebar.dart';
 
 class AdminHome extends StatefulWidget {
   const AdminHome({Key? key}) : super(key: key);
@@ -10,13 +11,15 @@ class AdminHome extends StatefulWidget {
 }
 
 class _AdminHomeState extends State<AdminHome> {
-  void _logout(BuildContext context) async {
-    // Clear the authentication token
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('authToken');
+  String sideBarSelectedRoute = '/packageView';
 
-    // Redirect to the login page
-    Navigator.pushReplacementNamed(context, '/login');
+  // Rest of the existing code...
+
+  void _onNavigationChanged(String route) {
+    setState(() {
+      sideBarSelectedRoute = route;
+    });
+    Navigator.of(context).pushReplacementNamed(route);
   }
 
   @override
@@ -25,30 +28,16 @@ class _AdminHomeState extends State<AdminHome> {
       appBar: AppBar(
         title: Text('Home'),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Welcome to the Home Page!'),
-            ElevatedButton(
-              onPressed: () => _logout(context),
-              child: Text('Logout'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushReplacementNamed(context, '/packageForm');
-              },
-              child: Text('to upload package'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushReplacementNamed(context, '/manageUsers');
-              },
-              child: const Text("manage users"),
-            ),
-          ],
-        ),
+      drawer: SideBar(
+        currentPage: sideBarSelectedRoute,
+        onNavigationChanged: _onNavigationChanged,
       ),
+      body: Center(
+        child: Container(
+
+          ),
+        ),
     );
+
   }
 }

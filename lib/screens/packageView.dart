@@ -13,9 +13,59 @@ class ViewPackage extends StatefulWidget {
 
 class _ViewPackageState extends State<ViewPackage> {
   FirebaseStorage storage = FirebaseStorage.instance;
-  CollectionReference imageCollection =
-      FirebaseFirestore.instance.collection('images');
+  CollectionReference imageCollection = FirebaseFirestore.instance.collection('packages');
   late String url;
+
+  Future<void> _showConfirmationDialog(String fileName) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white70,
+          title: const Text('Confirm Deletion',  style:TextStyle(
+              color: Colors.black,
+            fontWeight: FontWeight.bold,
+          fontSize: 15,
+        ),),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: const <Widget>[
+                Text('Are you sure you want to delete this package?' , style:TextStyle(
+                  color: Colors.black,
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel', style:TextStyle(
+                color: Color(0xff9b1616),
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Delete', style:TextStyle(
+                color: Color(0xff9b1616),
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),),
+              onPressed: () {
+                _delete(fileName);
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   Future<List<Map<String, dynamic>>> _loadMedia() async {
     List<Map<String, dynamic>> mediaFiles = [];
@@ -31,17 +81,16 @@ class _ViewPackageState extends State<ViewPackage> {
         "fileName": data['fileName'] ?? '',
         "date": data['date'] ?? '',
         "uploaded_by": data['uploaded_by'] ?? 'Nobody',
-        "instructions": data['instructions'] ?? 'No instructions',
+        "description": data['description'] ?? 'No description',
       });
     }
-
     return mediaFiles;
   }
 
   // Delete the selected image
   // This function is called when a trash icon is pressed
   Future<void> _delete(String ref) async {
-    await storage.ref(ref).delete();
+    await storage.ref().child('package/${ref}').delete();
     await imageCollection.doc(ref).delete();
 
     setState(() {});
@@ -73,23 +122,27 @@ class _ViewPackageState extends State<ViewPackage> {
                           margin: const EdgeInsets.symmetric(vertical: 10),
                           child: Column(
                             children: [
-                              Image.network(
-                                media['url'],
-                                errorBuilder: (BuildContext context,
-                                    Object exception, StackTrace? stackTrace) {
-                                  return const Icon(Icons
-                                      .error); // Show an error icon as fallback
-                                },
-                              ),
                               ListTile(
                                 dense: false,
                                 title: Text(media['fileName']),
-                                subtitle: Text(media['instructions']),
+                                subtitle: Column(
+
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                                  children: [
+
+                                    SizedBox(height: 10),
+                                    Text('Description: ${media['description']}'),
+                                    SizedBox(height: 10),
+                                    Text('date: ${media['date']} '),
+                                    SizedBox(height: 10),
+                                    Text('uploaded_by: ${media['uploaded_by']} '),
+                                  ],
+                                ),
                                 trailing: IconButton(
                                   onPressed: () {
-                                    if (media != null &&
-                                        media.containsKey('fileName')) {
-                                      _delete(media['fileName']);
+                                    if (media != null && media.containsKey('fileName')) {
+                                      _showConfirmationDialog(media['fileName']);
                                     }
                                   },
                                   icon: const Icon(
@@ -110,12 +163,6 @@ class _ViewPackageState extends State<ViewPackage> {
                   );
                 },
               ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushReplacementNamed(context, '/packageForm');
-              },
-              child: Text('to upload package'),
             ),
           ],
         ),

@@ -39,12 +39,13 @@ class _SigninState extends State<Signin> {
       if (_userRole == 'admin') {
         // Navigator.push(
         //     context, MaterialPageRoute(builder: (context) => AdminHome()));
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacementNamed(context, '/navigation');
       }
     }
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(brightness: Brightness.dark),
       home: Scaffold(
         body: Row(
           children: [
@@ -66,7 +67,6 @@ class _SigninState extends State<Signin> {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter)),
                 child: Container(
-                    height: MediaQuery.of(context).size.height - 800.0,
                     width: 500.0,
                     child: Padding(
                         padding: EdgeInsets.only(
